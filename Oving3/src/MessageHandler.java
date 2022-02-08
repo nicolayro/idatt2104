@@ -29,14 +29,6 @@ public class MessageHandler {
     public String readMessage() {
         try {
             return reader.readLine();
-//            String message = reader.readLine();
-//            completedMessage += message;
-//            while(message != null) {
-//                System.out.println(message);
-//                message = reader.readLine();
-//                completedMessage += message;
-//            }
-//            return completedMessage;
         } catch(Exception e) {
             System.out.println("Was not able to read message");
             return "There was an error";
@@ -54,7 +46,7 @@ public class MessageHandler {
             System.out.println("Was not able to send message!");
         }
     }
-
+    
     /**
      * Closes I/O streams. This instance is of the object is no longer usable after this call
      */
