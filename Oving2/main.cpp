@@ -16,7 +16,7 @@ private:
     std::condition_variable cv;
 public:
 
-    Workers(int num_threads1) {
+    explicit Workers(int num_threads1) {
         num_threads = num_threads1;
     }
 
@@ -24,7 +24,6 @@ public:
         for(int i = 0; i < num_threads; i++) {
             threads.emplace_back([&]  {
                 while(!done) {
-
                     std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(wait_mutex);
@@ -38,27 +37,27 @@ public:
                     if (task) {
                         task(); // Run task outside of mutex lock
                     } else {
-                        // Ends loop if there are no tasks
                         stop();
                     }
-                    // std::cout << "thread: " << std::this_thread::get_id() << " finished waiting" << std::endl;
+                    //std::cout << "thread: " << std::this_thread::get_id() << " finished waiting" << std::endl;
                 }
             });
         }
     }
 
     void post(const std::function<void()> &func) {
+        // Lås her?
         tasks.emplace_back(func);
         {
-                std::unique_lock<std::mutex> lock(wait_mutex);
-                wait = false;
+            std::unique_lock<std::mutex> lock(wait_mutex);
+            wait = false;
         }
         cv.notify_all();
     };
 
     void join() {
-        for(auto &thread : threads) {
-            thread.join();
+       for(auto &thread : threads) {
+           thread.join();
         }
     }
 
@@ -67,11 +66,24 @@ public:
      }
 
     void post_timeout(const std::function<void()> &func, long timeout) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
-        post(func);
+        tasks.emplace_back([&func, timeout] {
+            auto start = std::chrono::high_resolution_clock::now();
+
+            // Actual function
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+            func();
+
+            // Timing
+            auto stop = std::chrono::high_resolution_clock::now();
+            auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
+            std::cout << "Time taken by function: " << duration.count() << " milliseconds " << std::endl;
+        });
+        {
+            std::unique_lock<std::mutex> lock(wait_mutex);
+            wait = false;
+        }
+        cv.notify_all();
     }
-
-
 };
 
 // Tasks
@@ -125,7 +137,7 @@ void post_timeout_demo() {
         a();
     }, 2000); // Call task after 2000ms
     event_loop.post_timeout([] {
-        a();
+        b();
     }, 1000); // Call task after 1000ms
     event_loop.join();
 };
