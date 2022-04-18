@@ -44,10 +44,6 @@ httpServer.listen(3000, () => {
 const wsServer = net.createServer((connection) => {
   console.log("Client connected");
 
-  connection.on("upgrade", () => {
-    console.log("yoyo");
-  });
-
   connection.on("data", (data) => {
     if (data.toString().search("GET") !== -1) {
       const acceptKey = findKey(data.toString());
